@@ -23,6 +23,9 @@
 #include "DataFormats/L1TrackTrigger/interface/L1TkEmParticle.h"
 #include "DataFormats/L1TrackTrigger/interface/L1TkEmParticleFwd.h"
 
+#include "DataFormats/L1TrackTrigger/interface/L1TkEGParticle.h"
+#include "DataFormats/L1TrackTrigger/interface/L1TrkTauParticle.h"
+
 #include "DataFormats/L1TrackTrigger/interface/L1TkElectronParticle.h"
 #include "DataFormats/L1TrackTrigger/interface/L1TkElectronParticleFwd.h"
 
@@ -128,6 +131,22 @@ namespace
     //l1t::L1TkEmParticleRefVector refVectrkEmColl ;
     //l1t::L1TkEmParticleVectorRef vecReftrkEmColl ;
     //edm::reftobase::Holder<reco::Candidate, l1t::L1TkEmParticleRef> rtbtrke;
+
+    // L1TkEGParticle
+    l1t::L1TkEGParticleCollection trkegColl ;
+    edm::Wrapper<l1t::L1TkEGParticleCollection> w_trkegColl;
+    l1t::L1TkEGParticleRef reftrkEG ;
+    //l1t::L1TkEGParticleRefVector refVectrkEGColl ;
+    //l1t::L1TkEGParticleVectorRef vecReftrkEGColl ;
+    //edm::reftobase::Holder<reco::Candidate, l1t::L1TkEGParticleRef> rtbtrke;
+
+    // L1TrkTauParticle
+    l1t::L1TrkTauParticleCollection tktauColl ;
+    edm::Wrapper<l1t::L1TrkTauParticleCollection> w_tktauColl;
+    l1t::L1TrkTauParticleRef reftkTau ;
+    //l1t::L1TrkTauParticleRefVector refVectrkEGColl ;
+    //l1t::L1TrkTauParticleVectorRef vecReftrkEGColl ;
+    //edm::reftobase::Holder<reco::Candidate, l1t::L1TrkTauParticleRef> rtbtrke;
     
     // L1TkElectronParticle
     l1t::L1TkElectronParticleCollection trkeleColl ;
