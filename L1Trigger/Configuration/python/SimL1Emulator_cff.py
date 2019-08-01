@@ -150,6 +150,9 @@ phase2_SimL1Emulator += L1TrackerHTMiss
 phase2_SimL1Emulator += L1TkMuons
 phase2_SimL1Emulator += L1TkMuonsTP
 phase2_SimL1Emulator += L1TkGlbMuons
+# Alex: Commented out for now because of error during runing of raw2TTree_TDR_cfg.py
+#       I don't use these anyway. Its ok as long as I don't propage it from this branch 
+#       to the official brnach (HLTaus_L1TNtuples-CMSSW_10_6_1_patch2)
 phase2_SimL1Emulator += L1TkTauFromCalo
 phase2_SimL1Emulator += L1TrackerTaus
 phase2_SimL1Emulator += L1TkEGTaus
