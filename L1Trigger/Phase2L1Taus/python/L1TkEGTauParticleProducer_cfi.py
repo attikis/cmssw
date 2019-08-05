@@ -6,7 +6,8 @@ L1TkEGTaus = cms.EDProducer("L1TkEGTauParticleProducer",
         label = cms.string("TkEG"), 	# labels the collection of L1TkEGTauParticleProducer that is produced
 
         # L1 Tracker Taus 
-        L1TrkTauInputTag = cms.InputTag("L1TrkTaus", "TrkTau"),
+        #L1TrkTauInputTag = cms.InputTag("L1TrkTaus", "TrkTau"),
+        L1TrkTauInputTag = cms.InputTag("L1TrackerTaus", "TrkTau"),
         trkTau_minEt    = cms.double( 0.0 ),
         trkTau_minEta   = cms.double( 0.0 ),
         trkTau_maxEta   = cms.double( 1.5 ),
