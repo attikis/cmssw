@@ -152,7 +152,7 @@ phase2_SimL1Emulator += L1TkMuonsTP
 phase2_SimL1Emulator += L1TkGlbMuons
 phase2_SimL1Emulator += L1TkTauFromCalo
 phase2_SimL1Emulator += L1TrackerTaus
-phase2_SimL1Emulator += L1TkEGTaus # Problems when running raw2TTree_TDR_cfg.py due to not finding label "L1TrkTaus" instance "TrkTau"
+phase2_SimL1Emulator += L1TkEGTaus
 phase2_SimL1Emulator += L1TkCaloTaus
 
 
