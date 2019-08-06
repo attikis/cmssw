@@ -7,10 +7,8 @@ import FWCore.ParameterSet.Config as cms
 #from Configuration.ProcessModifiers.convertHGCalDigisSim_cff import convertHGCalDigisSim
 from Configuration.StandardSequences.Eras import eras
 
-#process = cms.Process('RERUNL1',eras.Phase2_trigger)
-#process = cms.Process('REPR',eras.Phase2_trigger,convertHGCalDigisSim)
-#process = cms.Process('REPR',eras.Phase2C4_timing_layer_bar)
-process = cms.Process('REPR',eras.Phase2C4_trigger) # new era
+#process = cms.Process('REPR',eras.Phase2C4_trigger) # MTD MC samples
+process = cms.Process('REPR',eras.Phase2C8_trigger) # 10_6_X TDR MC samples
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
@@ -18,12 +16,10 @@ process.load('SimGeneral.HepPDTESSource.pythiapdt_cfi')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.load('Configuration.EventContent.EventContent_cff')
 process.load('SimGeneral.MixingModule.mixNoPU_cfi')
-#process.load('Configuration.Geometry.GeometryExtended2023D17Reco_cff')
-#process.load('Configuration.Geometry.GeometryExtended2023D17_cff')
-#process.load('Configuration.Geometry.GeometryExtended2023D35Reco_cff')
-#process.load('Configuration.Geometry.GeometryExtended2023D35_cff') 
-process.load('Configuration.Geometry.GeometryExtended2023D28Reco_cff') # new geometry
-process.load('Configuration.Geometry.GeometryExtended2023D28_cff') # new geometry
+#process.load('Configuration.Geometry.GeometryExtended2023D35Reco_cff')  # MTD MC samples
+#process.load('Configuration.Geometry.GeometryExtended2023D35_cff')      # MTD MC samples
+process.load('Configuration.Geometry.GeometryExtended2023D41Reco_cff')  # 10_6_X TDR MC samples
+process.load('Configuration.Geometry.GeometryExtended2023D41_cff')      # 10_6_X TDR MC samples
 process.load('Configuration.StandardSequences.MagneticField_cff')
 process.load('Configuration.StandardSequences.SimL1Emulator_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
@@ -37,14 +33,20 @@ process.maxEvents = cms.untracked.PSet(
 # Input source
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
-        # -- MTD samples --
-        #"/store/mc/PhaseIIMTDTDRAutumn18DR/VBFHToTauTau_M125_14TeV_powheg_pythia8/FEVT/PU200_103X_upgrade2023_realistic_v2-v1/280000/0AC7F1B9-7624-2E44-8A70-34D4F152D917.root",
-        #"/store/mc/PhaseIIMTDTDRAutumn18DR/NeutrinoGun_E_10GeV/FEVT/PU200_103X_upgrade2023_realistic_v2-v1/40002/FF63F2E7-798C-AA4B-B45B-267534B77835.root",
-        "/store/mc/PhaseIIMTDTDRAutumn18DR/GluGluHToTauTau_M125_14TeV_powheg_pythia8/FEVT/PU200_103X_upgrade2023_realistic_v2-v1/80000/FF1F2905-A82D-3E45-B34E-E040C237018E.root",
+                                # -- 10_6_X TDR MC samples --
+                                # "root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/SingleTau_PT2to150/GEN-SIM-DIGI-RAW/PU200_106X_upgrade2023_realistic_v3-v2/50000/FFA0DD2D-6ECC-A840-81E8-9E5A1F1A8476.root",
+                                #"root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/SingleTau_PT2to150/GEN-SIM-DIGI-RAW/NoPU_106X_upgrade2023_realistic_v3-v1/260000/1BF39431-3FE1-AD46-9C73-54894BF7A165.root",
+                                "root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/TTbar_14TeV_TuneCP5_Pythia8/GEN-SIM-DIGI-RAW/PU200_106X_upgrade2023_realistic_v3_ext1-v3/60000/29581CC9-9993-5449-AF0E-BFF473BFCCF1.root",
+                                # -- MTD samples --
+                                #"/store/mc/PhaseIIMTDTDRAutumn18DR/NeutrinoGun_E_10GeV/FEVT/PU200_103X_upgrade2023_realistic_v2-v1/40002/FF63F2E7-798C-AA4B-B45B-267534B77835.root",
+                                #"/store/mc/PhaseIIMTDTDRAutumn18DR/GluGluHToTauTau_M125_14TeV_powheg_pythia8/FEVT/PU200_103X_upgrade2023_realistic_v2-v1/80000/FF1F2905-A82D-3E45-B34E-E040C237018E.root",
+                                # -- Fall17D samples --
+                                #"/store/mc/PhaseIIFall17D/GluGluHToTauTau_M125_14TeV_powheg_pythia8/GEN-SIM-DIGI-RAW/L1TPU200_93X_upgrade2023_realistic_v5-v1/90000/0A0DD1BB-7E39-E811-AC07-B496910A85DC.root",
 
-        # -- Fall17D samples --
-        #"/store/mc/PhaseIIFall17D/GluGluHToTauTau_M125_14TeV_powheg_pythia8/GEN-SIM-DIGI-RAW/L1TPU200_93X_upgrade2023_realistic_v5-v1/90000/0A0DD1BB-7E39-E811-AC07-B496910A85DC.root",
-        ),
+                                # -- Fall17D samples --
+                                #"/store/mc/PhaseIIFall17D/GluGluHToTauTau_M125_14TeV_powheg_pythia8/GEN-SIM-DIGI-RAW/L1TPU200_93X_upgrade2023_realistic_v5-v1/90000/00D9F890-9739-E811-A931-E0071B73B6B0.root",
+                                #"/store/mc/PhaseIIFall17D/GluGluHToTauTau_M125_14TeV_powheg_pythia8/GEN-SIM-DIGI-RAW/L1TPU200_93X_upgrade2023_realistic_v5-v1/90000/08467E34-8139-E811-8059-008CFA1C6564.root",
+                            ),
                             secondaryFileNames = cms.untracked.vstring()
 )
 
@@ -64,6 +66,7 @@ from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, '103X_upgrade2023_realistic_v2', '') 
 
 process.load('SimCalorimetry.HcalTrigPrimProducers.hcaltpdigi_cff')
+process.load('CalibCalorimetry.CaloTPG.CaloTPGTranscoder_cfi') 
 
 # Path and EndPath definitions
 process.L1simulation_step = cms.Path(process.SimL1Emulator)
@@ -77,10 +80,7 @@ process.pL1EG = cms.Path( process.L1EGammaClusterEmuProducer )
 process.load('L1Trigger.L1CaloTrigger.l1EGammaEEProducer_cfi')
 process.pL1EGHGCal = cms.Path( process.l1EGammaEEProducer )
 
-# ----                                                                              
-
 # Now we produce the L1TkEGTauParticles, the L1TrkTauParticles and the L1CaloTkTauParticles 
-                                                                           
 process.load("L1Trigger.Phase2L1Taus.L1TrkTauParticleProducer_cfi")
 process.pL1TrkTausProd = cms.Path( process.L1TrkTaus )
 
@@ -95,13 +95,11 @@ process.load("L1Trigger.Phase2L1Taus.L1TausAnalyzer_cff")
 process.pL1TausAna = cms.Path(process.TkEGRate + process.TkEGEff + process.TrkTauRate + process.TrkTauEff + process.CaloTkRate + process.CaloTkEff)
 
 # ---------------------------------------------------------------------------
-
 # root file with histograms produced by the analyzer
 filename = "L1TausPerformance.root"
 process.TFileService = cms.Service("TFileService", fileName = cms.string(filename), closeFileFast = cms.untracked.bool(True))
 
 # ---------------------------------------------------------------------------
-
 # Schedule definition
 process.schedule = cms.Schedule(process.L1simulation_step, process.L1TrackTrigger_step, process.pL1EG, process.pL1EGHGCal, process.pL1CaloTkTausProd, process.pL1TrkTausProd, process.pL1TkEGTausProd, process.pL1TausAna)
 
