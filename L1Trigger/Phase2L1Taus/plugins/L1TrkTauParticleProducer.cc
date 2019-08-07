@@ -1,7 +1,7 @@
 // -*- C++ -*-
 //
 //
-// dummy producer for a L1TrkTauParticle
+// Producer for a L1TrkTauParticle
 // 
 
 // system include files
@@ -70,6 +70,11 @@ private:
   virtual void produce(edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
   
+  bool GetOptTracks(const float tk_pt, 
+		    const int tk_nStubs, 
+		    const float chi2Red, 
+		    const float chi2Bend); // iro
+  
   void GetShrinkingConeSizes(float tk_pt,
 			     const float shrinkCone_Constant,
 			     const float sigCone_dRCutoff,
@@ -101,6 +106,7 @@ private:
   float cfg_tk_maxChiSq;                // Max chi squared for L1TTTracks [unitless]
   bool cfg_tk_useRedChiSq;              // Use chiSq or redChiSq [unitless]
   unsigned int cfg_tk_minStubs;         // Min number of stubs per L1TTTrack [unitless]   
+  bool cfg_tk_useOptCuts;               // Overwrite all track quality criteria and use set of optimised values
 
   // Seed-tracks parameters
   float cfg_seedtk_minPt;               // Min pT of L1TrkTau seed L1TTTracks [GeV]
@@ -109,6 +115,7 @@ private:
   bool cfg_seedtk_useRedChiSq;          // Use chiSq or redChiSq [unitless]
   unsigned int cfg_seedtk_minStubs;     // Min number of stubs of L1TrkTau seed L1TTTracks [unitless]   
   float cfg_seedtk_maxDeltaR;           // Max opening of the cone in which the TrkTau seed track is the leading one in pT [unitless]
+  bool cfg_seedtk_useOptCuts;           // Overwrite all track quality criteria and use set of optimised values
 
   // Shrinking Cone parameters
   float cfg_shrinkCone_Constant;        // Constant which is used for defining the opening of the signal cone : sigCone_dRMax = (cfg_shrinkCone_Constant)/(pT of the TrkTau seed track) [GeV]
@@ -152,7 +159,8 @@ L1TrkTauParticleProducer::L1TrkTauParticleProducer(const edm::ParameterSet& iCon
   cfg_tk_maxChiSq    = (float)iConfig.getParameter<double>("tk_maxChiSq");
   cfg_tk_useRedChiSq = (bool)iConfig.getParameter<bool>("tk_useRedChiSq");
   cfg_tk_minStubs    = (unsigned int)iConfig.getParameter<unsigned int>("tk_minStubs");
-
+  cfg_tk_useOptCuts  = (bool)iConfig.getParameter<bool>("tk_useOptCuts"); //iro
+  
   // Seed-tracks parameters
   cfg_seedtk_minPt       = (float)iConfig.getParameter<double>("seedtk_minPt");
   cfg_seedtk_maxEta      = (float)iConfig.getParameter<double>("seedtk_maxEta");
@@ -160,6 +168,7 @@ L1TrkTauParticleProducer::L1TrkTauParticleProducer(const edm::ParameterSet& iCon
   cfg_seedtk_useRedChiSq = (bool)iConfig.getParameter<bool>("seedtk_useRedChiSq");
   cfg_seedtk_minStubs    = (unsigned int)iConfig.getParameter<unsigned int>("seedtk_minStubs");
   cfg_seedtk_maxDeltaR   = (float)iConfig.getParameter<double>("seedtk_maxDeltaR");
+  cfg_seedtk_useOptCuts  = (bool)iConfig.getParameter<bool>("seedtk_useOptCuts"); // iro
 
   // Shrinking Cone parameters
   cfg_shrinkCone_Constant  = (float)iConfig.getParameter<double>("shrinkCone_Constant");
@@ -227,28 +236,42 @@ L1TrkTauParticleProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     L1TTTrackRefPtr track_RefPtr( L1TTTrackHandle, track_counter++ );
 
     // Retrieve track variables
-    float Pt     = trkIter->getMomentum(cfg_tk_nFitParams).perp();
-    float Eta    = trkIter->getMomentum(cfg_tk_nFitParams).eta();
-    float Chi2   = trkIter->getChi2(cfg_tk_nFitParams);
-    float myChi2 = 0.0;
+    float tk_pt   = trkIter->getMomentum(cfg_tk_nFitParams).perp();
+    float tk_eta  = trkIter->getMomentum(cfg_tk_nFitParams).eta();
+    float tk_chi2 = trkIter->getChi2(cfg_tk_nFitParams);
+    float myChi2  = 0.0;
     std::vector< L1TTStubRef > Stubs = trkIter-> getStubRefs();
-    unsigned int NStubs = Stubs.size();
-    unsigned int dof    = (2 * NStubs) - cfg_tk_nFitParams;
-    float redChi2       = Chi2/dof;
+    unsigned int tk_nStubs = Stubs.size();
+    unsigned int tk_DOF    = (2 * tk_nStubs) - cfg_tk_nFitParams; // degrees of freedom
+    float tk_chi2Red       = tk_chi2/tk_DOF;
+    float tk_chi2Bend      = trkIter->getStubPtConsistency(cfg_tk_nFitParams);
+    bool tk_isGood         = false;
 
     // Determine which Chi2 value to consider in criteria
-    if (cfg_tk_useRedChiSq) myChi2 = redChi2;
-    else myChi2 = Chi2;
+    if (cfg_tk_useRedChiSq) myChi2 = tk_chi2Red;
+    else myChi2 = tk_chi2;
 	  
     // Apply quality criteria on the L1TTTracks
-    if ( Pt < cfg_tk_minPt ) continue;
-    if ( fabs(Eta) < cfg_tk_minEta ) continue;
-    if ( fabs(Eta) > cfg_tk_maxEta ) continue;
-    if ( myChi2 > cfg_tk_maxChiSq ) continue;
-    if ( NStubs < cfg_tk_minStubs ) continue;
+    if (cfg_tk_useOptCuts) 
+      {
+	tk_isGood = GetOptTracks(tk_pt, tk_nStubs, tk_chi2Red, tk_chi2Bend); //iro
+	if (!tk_isGood) continue;
+      }
+    else
+      {
+	// Use custom track quality criteria
+ 	if ( tk_pt < cfg_tk_minPt )         continue;
+	if ( fabs(tk_eta) < cfg_tk_minEta ) continue;
+	if ( fabs(tk_eta) > cfg_tk_maxEta ) continue;
+	if ( myChi2 > cfg_tk_maxChiSq )     continue;
+	if ( tk_nStubs < cfg_tk_minStubs )  continue;
+      }
+    
+#ifdef DEBUG
+    // std::cout << track_RefPtr->getMomentum(cfg_tk_nFitParams).perp()<<"    "<< Pt << std::endl;
+    std::cout << "Pt = " << tk_pt << ", Eta = " << tk_eta << ", NStub = " << tk_nStubs << ", bendChi2 = " << tk_chi2Bend << ", Chi2 = " << tk_chi2 << ", redChi2 = ", tk_chi2Red << std::endl;
+#endif
 
-    //std::cout << track_RefPtr->getMomentum(cfg_tk_nFitParams).perp()<<"    "<< Pt << std::endl;
-	
     SelTTTrackPtrs.push_back(track_RefPtr);
 
   }// End-loop: All the L1TTTracks
@@ -256,12 +279,12 @@ L1TrkTauParticleProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
   // Sort by pT all selected L1TTTracks
   std::sort( SelTTTrackPtrs.begin(), SelTTTrackPtrs.end(), TrackPtComparator(cfg_tk_nFitParams) );
   
-  ///////////////////////////////////////////////////////////////
-  //  Tracks-Only Taus Algorithm
-  ///////////////////////////////////////////////////////////////
 
+  ///////////////////////////////////////////////////////////////
+  //  Tracks-only Algorithm
+  ///////////////////////////////////////////////////////////////
 #ifdef DEBUG
-  std::cout << "\n\t=== Tracks + EG Algorithm" <<std::endl;
+  std::cout << "\n\t=== Tracks-only Algorithm" <<std::endl;
 #endif
   
   std::vector< L1TTTrackRefPtr > TrackCluster; 
@@ -290,11 +313,14 @@ L1TrkTauParticleProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
     if (cfg_tk_useRedChiSq) myChi2 = iRedChi2;
     else myChi2 = iChi2;
 
-    // Apply seed track cuts
-    if ( iPt < cfg_seedtk_minPt ) continue;
-    if ( fabs(iEta) > cfg_seedtk_maxEta ) continue;
-    if ( myChi2 > cfg_seedtk_maxChiSq ) continue;
-    if ( iNStubs < cfg_seedtk_minStubs ) continue;
+    if (!cfg_seedtk_useOptCuts)//iro
+      {
+	// Apply custom seed track cuts
+	if ( iPt < cfg_seedtk_minPt ) continue;
+	if ( fabs(iEta) > cfg_seedtk_maxEta ) continue;
+	if ( myChi2 > cfg_seedtk_maxChiSq ) continue;
+	if ( iNStubs < cfg_seedtk_minStubs ) continue;
+      }
     
     // Check that there are no close tracks (in terms of deltaR) with higher Pt
     bool highPtNeighbourFound = false;
@@ -398,6 +424,55 @@ L1TrkTauParticleProducer::produce(edm::Event& iEvent, const edm::EventSetup& iSe
 }
 
 // --------------------------------------------------------------------------------------
+bool L1TrkTauParticleProducer::GetOptTracks(const float tk_pt,
+					    const int tk_nStubs,
+					    const float tk_chi2Red, 
+					    const float tk_chi2Bend) //iro
+{
+  bool bStubs    = false;
+  bool bChi2Red  = false;
+  bool bChi2Bend = false;
+
+  // Apply Optimal cuts
+  if (tk_pt >= 2.0 && tk_pt < 5.0)
+    {                  
+      if (tk_chi2Red <= 14.5) bChi2Red  = true;
+      if (tk_chi2Bend <= 3.1) bChi2Bend = true;
+      if (tk_nStubs> 4)       bStubs    = true;
+    }                  
+  else if (tk_pt >= 5.0 && tk_pt < 15.0)
+    {                  
+      if (tk_chi2Red <= 9.5)  bChi2Red  = true;
+      if (tk_chi2Bend <= 4.0) bChi2Bend = true;
+      if (tk_nStubs> 4)       bStubs    = true;
+    }                  
+  else if (tk_pt >= 15.0 && tk_pt < 25.0)
+    {                  
+      if (tk_chi2Red <= 12.5) bChi2Red  = true;
+      if (tk_chi2Bend <= 3.0) bChi2Bend = true;
+      if (tk_nStubs> 4)       bStubs    = true;
+    }                  
+  else if (tk_pt >= 25.0 && tk_pt < 50.0)
+    {
+      if (tk_chi2Red <= 6.7)  bChi2Red  = true;
+      if (tk_chi2Bend <= 4.3) bChi2Bend = true;
+      if (tk_nStubs> 4)       bStubs    = true;
+    }                  
+  else if (tk_pt >= 50.0)
+    {
+      if (tk_chi2Red <= 6.0)  bChi2Red  = true;
+      if (tk_chi2Bend <= 4.1) bChi2Bend = true;
+      if (tk_nStubs> 4)       bStubs    = true;
+    }                  
+  else                 
+    {                  
+      // Some tracks with pT just below 2 GeV are possible (e.g 1.8226 GeV)
+       
+      // std::cout << "=== L1TrkTauParticleProducer::produce(): Unexpected pT value of " << tk_pt << " GeV/c" << std::endl;          
+    }
+  
+  return bStubs && bChi2Red && bChi2Bend;
+}
 
 void L1TrkTauParticleProducer::GetShrinkingConeSizes(float tk_pt,
 						   const float shrinkCone_Constant,

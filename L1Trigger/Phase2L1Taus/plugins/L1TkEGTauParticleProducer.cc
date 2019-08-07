@@ -80,7 +80,10 @@ private:
   virtual void beginJob() ;
   virtual void produce(edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
-  
+
+  math::XYZTLorentzVector GetCalibratedP4(const math::XYZTLorentzVector p4, 
+					  const float ldgEG_Et); //iro
+
   void GetShrinkingConeSizes(float tk_pt,
 			     const float shrinkCone_Constant,
 			     const float sigCone_dRCutoff,
@@ -110,6 +113,8 @@ private:
   float cfg_eg_minEt;                   // Min eT applied on all L1EGammaCrystalClusters [GeV]
   float cfg_eg_minEta;                  // Min |eta| applied on all L1EGammaCrystalClusters [GeV]
   float cfg_eg_maxEta;                  // Max |eta| applied on all L1EGammaCrystalClusters [GeV]
+  std::vector<unsigned int> cfg_eg_hwQualB; // Quality bit vector to use (|eta| <  1.52)
+  std::vector<unsigned int> cfg_eg_hwQualE; // Quality bit vector to use (|eta| >= 1.52)
 
   // Shrinking Cone parameters
   float cfg_shrinkCone_Constant;        // Constant which is used for defining the opening of the signal cone : sigCone_dRMax = (cfg_shrinkCone_Constant)/(pT of the TkEG seed track) [GeV]
@@ -122,6 +127,9 @@ private:
   
   // EGs clustering parameters
   float cfg_maxInvMass_TkEGs;           // Max Invariant Mass of the Track+EG Cluster (including the L1TkEG seed L1TTTrack) [GeV/c^2]
+
+  // Calibration
+  bool  cfg_tkEGTau_calibrateEt;        // Apply EG-Et-dependent calibration factors to the tracks+EG candidates?
 
   const edm::EDGetTokenT< EGammaBxCollection > egToken;
   const edm::EDGetTokenT< EGammaBxCollection > egHGCalToken;
@@ -141,15 +149,17 @@ L1TkEGTauParticleProducer::L1TkEGTauParticleProducer(const edm::ParameterSet& iC
   label = iConfig.getParameter<std::string>("label");  // label of the collection produced
   
   // L1 Tracker Taus
-  cfg_trkTau_minEt      = (float)iConfig.getParameter<double>("trkTau_minEt");
-  cfg_trkTau_minEta     = (float)iConfig.getParameter<double>("trkTau_minEta");
-  cfg_trkTau_maxEta     = (float)iConfig.getParameter<double>("trkTau_maxEta");
+  cfg_trkTau_minEt  = (float)iConfig.getParameter<double>("trkTau_minEt");
+  cfg_trkTau_minEta = (float)iConfig.getParameter<double>("trkTau_minEta");
+  cfg_trkTau_maxEta = (float)iConfig.getParameter<double>("trkTau_maxEta");
   cfg_tk_nFitParams = (unsigned int)iConfig.getParameter<unsigned int>("tk_nFitParams");
 
   // L1 EGammas
-  cfg_eg_minEt  = (float)iConfig.getParameter<double>("eg_minEt");
-  cfg_eg_minEta = (float)iConfig.getParameter<double>("eg_minEta");
-  cfg_eg_maxEta = (float)iConfig.getParameter<double>("eg_maxEta");
+  cfg_eg_minEt   = (float)iConfig.getParameter<double>("eg_minEt");
+  cfg_eg_minEta  = (float)iConfig.getParameter<double>("eg_minEta");
+  cfg_eg_maxEta  = (float)iConfig.getParameter<double>("eg_maxEta");
+  cfg_eg_hwQualB = iConfig.getParameter<std::vector<unsigned int>>("eg_hwQualB"); // iro
+  cfg_eg_hwQualE = iConfig.getParameter<std::vector<unsigned int>>("eg_hwQualE"); // iro
 
   // Shrinking Cone parameters
   cfg_shrinkCone_Constant  = (float)iConfig.getParameter<double>("shrinkCone_Constant");
@@ -160,6 +170,9 @@ L1TkEGTauParticleProducer::L1TkEGTauParticleProducer(const edm::ParameterSet& iC
   
   // EGs clustering parameters
   cfg_maxInvMass_TkEGs = (float)iConfig.getParameter<double>("maxInvMass_TkEGs");
+
+  // Energy re-Calibration 
+  cfg_tkEGTau_calibrateEt =  (bool)iConfig.getParameter<bool>("tkEGTau_calibrateEt");//iro
    
   produces<L1TkEGTauParticleCollection>(label);
 }
@@ -262,13 +275,19 @@ L1TkEGTauParticleProducer::produce(edm::Event& iEvent, const edm::EventSetup& iS
   for (egIter = eGammaCollection.begin(); egIter != eGammaCollection.end();  ++egIter) {
     edm::Ref< EGammaBxCollection > EGammaRef( eGammaHandle, ieg++ );
     
-    float Et = egIter -> et();
-    float Eta = egIter -> eta();
+    float Et   = egIter -> et();
+    float Eta  = egIter -> eta();
+    int hwQual = egIter -> hwQual();
     
     if (Et < cfg_eg_minEt) continue;
     if (fabs(Eta) < cfg_eg_minEta) continue;
     if (fabs(Eta) > cfg_eg_maxEta) continue;
-    
+    // if (hwQual != cfg_eg_hwQualB) continue; // iro
+    if (std::find(cfg_eg_hwQualB.begin(), cfg_eg_hwQualB.end(), hwQual) == cfg_eg_hwQualB.end()) continue; // iro
+#ifdef DEBUG
+    std::cout << "Barrel) hwQual = " << hwQual << std::endl;
+ #endif
+
     SelEGsPtrs.push_back(EGammaRef);
 
   }// End-loop: All the L1EGs (Barrel)
@@ -280,13 +299,18 @@ L1TkEGTauParticleProducer::produce(edm::Event& iEvent, const edm::EventSetup& iS
   for (egIter = eGammaHGCalCollection.begin(); egIter != eGammaHGCalCollection.end();  ++egIter) {
     edm::Ref< EGammaBxCollection > EGammaRef( eGammaHGCalHandle, ieg++ );
     
-    float Et = egIter -> et();
-    float Eta = egIter -> eta();
+    float Et   = egIter -> et();
+    float Eta  = egIter -> eta();
+    int hwQual = egIter -> hwQual();
 
     if (Et < cfg_eg_minEt) continue;
     if (fabs(Eta) < cfg_eg_minEta) continue;
     if (fabs(Eta) > cfg_eg_maxEta) continue;
-    
+    if (std::find(cfg_eg_hwQualE.begin(), cfg_eg_hwQualE.end(), hwQual) == cfg_eg_hwQualE.end()) continue; // iro
+
+#ifdef DEBUG
+    std::cout << "Endcap) hwQual = " << hwQual << std::endl; //iro
+#endif
     SelEGsPtrs.push_back(EGammaRef);
 
   }// End-loop: All the L1EGs (Endcap)
@@ -360,7 +384,7 @@ n = "<< isoCone_dRMin <<"  , isoCone_dRMax = "<< cfg_isoCone_dRMax <<std::endl;
       if (deltaR > sigCone_dRMax) continue;
       
       // Calculate p4 of EG
-      float jPt = sqrt( (jEt/(sin(2*atan(exp(-jEta)))))*(jEt/(sin(2*atan(exp(-jEta))))) - pionMass*pionMass )*sin(2*atan(exp(-jEta)));
+      float jPt      = sqrt( (jEt/(sin(2*atan(exp(-jEta)))))*(jEt/(sin(2*atan(exp(-jEta))))) - pionMass*pionMass )*sin(2*atan(exp(-jEta)));
       Double_t px    = jPt*cos(jPhi);
       Double_t py    = jPt*sin(jPhi);
       Double_t theta = 2*atan(exp(-jEta));
@@ -375,25 +399,45 @@ n = "<< isoCone_dRMin <<"  , isoCone_dRMax = "<< cfg_isoCone_dRMax <<std::endl;
       
       // Apply mass cut off to the candidate 
       if (p4_cand_tmp.M() > cfg_maxInvMass_TkEGs) continue;
-      
+
       // If the TkEG candidates mass remains below the cutoff value add the EG to the cluster and add its p4
       p4_egs += p4_tmp;
       
       EGcluster.push_back(jEG);
+#ifdef DEBUG
+      std::cout << "i = " << i << ", j = " << j << ", jEG->et() = " << jEG->et() << std::endl;
+#endif
       EGclusterIndx.push_back(j);
       
     }// EGs Clustering
     
+     
     // Build the tau candidate
+    const int tkEG_nEGS = EGcluster.size();
     math::XYZTLorentzVector p4_total;
+    math::XYZTLorentzVector p4_cal;
+    math::XYZTLorentzVector p4_final;
     p4_total = p4_trks + p4_egs;
-    L1TkEGTauParticle trkEG(p4_total, TrackCluster, EGcluster, iso);
-    
+
+    // Only calibrate the tau candidate if an EG is associated with it
+    if (tkEG_nEGS > 0) p4_cal = GetCalibratedP4(p4_total, EGcluster.at(0)->et() ); //iro
+    else p4_cal = p4_total;
+  
+    // Apply EG-Et-dependent calibration factors to the tracks+EG candidates? 
+    if (cfg_tkEGTau_calibrateEt) p4_final = p4_cal; // iro
+    else p4_final = p4_total;
+
+    // Create the tracks+EG tau candidate
+    L1TkEGTauParticle trkEG(p4_final, TrackCluster, EGcluster, iso);
+
     // Keep the tracks+EGs tau candidate 
     result -> push_back( trkEG );
     
   }// End-loop: All the L1TrkTaus
-  
+#ifdef DEBUG
+  std::cout << "\n" << std::endl;
+#endif
+
   // Sort the TkEG candidates by eT before saving to the event 
   sort( result->begin(), result->end(), L1TkEGTau::EtComparator() );
   
@@ -403,6 +447,51 @@ n = "<< isoCone_dRMin <<"  , isoCone_dRMax = "<< cfg_isoCone_dRMax <<std::endl;
 
 
 // --------------------------------------------------------------------------------------
+math::XYZTLorentzVector L1TkEGTauParticleProducer::GetCalibratedP4(const math::XYZTLorentzVector p4,
+								   const float ldgEG_Et) //iro
+{
+  math::XYZTLorentzVector p4_cal;
+  
+  const float px   = p4.px();
+  const float py   = p4.py();
+  const float pz   = p4.pz();
+  const float e    = p4.e();
+  float e_corr     = 0.0;
+  float corrFactor = 1.0;
+
+  // Correction factors
+  const float corrFactor_0to5GeV  = 1.0 + 0.04; // MTD5 samples
+  const float corrFactor_5to50GeV = 1.0 - 0.07; // MTD5 samples
+  const float corrFactor_GE50GeV  = 1.0 - 0.07; // MTD5 samples
+
+  // Assign the correct correction factor
+  if (ldgEG_Et < 5)
+    {
+      corrFactor = corrFactor_0to5GeV;
+    }
+  else if ( (ldgEG_Et >= 5) && (ldgEG_Et < 50) )
+    {
+      corrFactor = corrFactor_5to50GeV;
+    }
+  else
+    {
+      corrFactor = corrFactor_GE50GeV;
+    }
+  
+  // Fill the lorentz vector with calibrated value of energy
+  e_corr = e*corrFactor;
+  p4_cal.SetCoordinates(px, py, pz, e_corr);
+
+#ifdef DEBUG
+  std::cout << "ldgEG_Et = " << ldgEG_Et << ", Et  = " << p4.Et()     << ", Eta  = " << p4.Eta()       << ", Phi  = " << p4.Phi()      << std::endl;
+  std::cout << "ldgEG_Et = " << ldgEG_Et << ", Et_ = " << p4_cal.Et() << ", Eta_ = " << p4_cal.Eta()   << ", Phi_ = " << p4_cal.Phi()  << std::endl;
+  std::cout << "\n" << std::endl;
+#endif
+  
+
+  return p4_cal;
+  
+}
 void L1TkEGTauParticleProducer::GetShrinkingConeSizes(float tk_pt,
 						   const float shrinkCone_Constant,
 						   const float sigCone_dRCutoff,

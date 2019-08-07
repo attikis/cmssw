@@ -13,6 +13,7 @@ L1TrkTaus = cms.EDProducer("L1TrkTauParticleProducer",
         tk_maxChiSq     = cms.double( 94.0 ),
         tk_useRedChiSq  = cms.bool( False ),
         tk_minStubs     = cms.uint32( 5 ),
+        tk_useOptCuts   = cms.bool( True ), # Overwrites all tk-quality criteria  (Pt, Eta, ChiSq, RedChiSq, MinStubs)
                             
         # Seed-tracks parameters
         seedtk_minPt       = cms.double( 5.0 ),
@@ -21,6 +22,7 @@ L1TrkTaus = cms.EDProducer("L1TrkTauParticleProducer",
         seedtk_useRedChiSq = cms.bool( False ),
         seedtk_minStubs    = cms.uint32( 5 ),
         seedtk_maxDeltaR   = cms.double( 0.15 ),
+        seedtk_useOptCuts  = cms.bool( True ), # Overwrites all tk-quality criteria! (Pt, Eta, ChiSq, RedChiSq, MinStubs)
 
         # Shrinking Cone parameters
         shrinkCone_Constant  = cms.double( 2.5 ),
@@ -28,7 +30,7 @@ L1TrkTaus = cms.EDProducer("L1TrkTauParticleProducer",
         # sigCone_dRMax        = cms.double( 0.15), # not needed in shrinking cone mode
         sigCone_cutoffDeltaR = cms.double( 0.15 ),
         isoCone_dRMax        = cms.double( 0.30 ),
-        isoCone_useCone      = cms.bool( False ),    # set to True (False) for cone (annulus)
+        isoCone_useCone      = cms.bool( True ),    # set to True (False) for cone (annulus)
 
         # Track-clustering parameters
         maxDeltaZ_trks  = cms.double( 1.00 ), # cm
@@ -37,7 +39,7 @@ L1TrkTaus = cms.EDProducer("L1TrkTauParticleProducer",
         # Isolation parameters
         useVtxIso  = cms.bool( True ),
         useRelIso  = cms.bool( False ),
-        vtxIso_WP  = cms.double( 1.0 ),
-        relIso_WP  = cms.double( 0.05 ),
-        relIso_dz0 = cms.double( 0.5 ),
+        vtxIso_WP  = cms.double( 0.5 ),  # cm
+        relIso_WP  = cms.double( 0.05 ), # unitless
+        relIso_dz0 = cms.double( 0.6 ),  # cm
 )

@@ -34,9 +34,8 @@ process.maxEvents = cms.untracked.PSet(
 process.source = cms.Source("PoolSource",
                             fileNames = cms.untracked.vstring(
                                 # -- 10_6_X TDR MC samples --
-                                # "root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/SingleTau_PT2to150/GEN-SIM-DIGI-RAW/PU200_106X_upgrade2023_realistic_v3-v2/50000/FFA0DD2D-6ECC-A840-81E8-9E5A1F1A8476.root",
-                                #"root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/SingleTau_PT2to150/GEN-SIM-DIGI-RAW/NoPU_106X_upgrade2023_realistic_v3-v1/260000/1BF39431-3FE1-AD46-9C73-54894BF7A165.root",
-                                "root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/TTbar_14TeV_TuneCP5_Pythia8/GEN-SIM-DIGI-RAW/PU200_106X_upgrade2023_realistic_v3_ext1-v3/60000/29581CC9-9993-5449-AF0E-BFF473BFCCF1.root",
+                                "root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/SingleTau_PT2to150/GEN-SIM-DIGI-RAW/PU200_106X_upgrade2023_realistic_v3-v2/50000/FFA0DD2D-6ECC-A840-81E8-9E5A1F1A8476.root",
+                                # "root://cms-xrd-global.cern.ch//store/mc/PhaseIITDRSpring19DR/TTbar_14TeV_TuneCP5_Pythia8/GEN-SIM-DIGI-RAW/PU200_106X_upgrade2023_realistic_v3_ext1-v3/60000/29581CC9-9993-5449-AF0E-BFF473BFCCF1.root",
                                 # -- MTD samples --
                                 #"/store/mc/PhaseIIMTDTDRAutumn18DR/NeutrinoGun_E_10GeV/FEVT/PU200_103X_upgrade2023_realistic_v2-v1/40002/FF63F2E7-798C-AA4B-B45B-267534B77835.root",
                                 #"/store/mc/PhaseIIMTDTDRAutumn18DR/GluGluHToTauTau_M125_14TeV_powheg_pythia8/FEVT/PU200_103X_upgrade2023_realistic_v2-v1/80000/FF1F2905-A82D-3E45-B34E-E040C237018E.root",
